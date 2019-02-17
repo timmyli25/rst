@@ -1,9 +1,4 @@
-import cynet.cynet as sp
-import pandas as pd
-import numpy as np
-from numpy import genfromtxt
-import yaml
-import glob
+import cynet.cynet as cn
 
 stream = file('config_pypi.yaml', 'r')
 settings_dict=yaml.load(stream)
@@ -19,5 +14,5 @@ PARTITION=settings_dict['PARTITION']
 XgenESeSS=settings_dict['XgenESeSS']
 RUN_LOCAL=settings_dict['RUN_LOCAL']
 
-XG = sp.xgModels(TS_PATH,NAME_PATH, LOG_PATH,FILEPATH, BEG, END, NUM, PARTITION, XgenESeSS,RUN_LOCAL)
+XG = cn.xgModels(TS_PATH,NAME_PATH, LOG_PATH,FILEPATH, BEG, END, NUM, PARTITION, XgenESeSS,RUN_LOCAL)
 XG.run(workers=4)

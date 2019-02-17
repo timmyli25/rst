@@ -217,6 +217,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
 
         import cynet.cynet as cn
         import numpy as np
+        import pickle
 
         EPS = 200
         STOREFILE='crime.p'
@@ -248,6 +249,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
             pickle.dump(tiles,tiles_pickle)
 
 
+
     **Script 1** creates tiles.txt, crime.p, and CRIME-BURGLARY-THEFT-MOTOR_VEHICLE_THEFT.csv.
     This csv is the intermediate time series table mentioned above. However, it is only one of
     them. We will create two more.
@@ -265,7 +267,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         with open("tiles.txt", "rb") as tiles_pickle:
             tiles = pickle.load(tiles_pickle)
 
-        S01=cn.spatioTemporal(log_store=CSVFILE,
+        S01=cn.spatioTemporal(log_store=STOREFILE,
                              types=[['HOMICIDE','ASSAULT','BATTERY']],
                              value_limits=None,
                              grid=tiles,
@@ -290,7 +292,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         STOREFILE='crime.p'
         CSVFILE='crime.csv'
 
-        with open("list1.txt", "rb") as tiles_pickle:
+        with open("tiles.txt", "rb") as tiles_pickle:
             tiles = pickle.load(tiles_pickle)
 
         S2=cn.spatioTemporal(log_store=STOREFILE,
@@ -303,7 +305,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
                             threshold=0.05)
         S2.fit(csvPREF='ARREST')
 
-        This script is slightly different from the last two. By leaving types as None,
+    This script is slightly different from the last two. By leaving types as None,
     all of the categories in "Primary Type" will be counted. Instead, we filter by
     the "Arrest" column. This time, we are creating a time  series table whose tiles
     had a crime which resulted in an arrest in at least five percent of the days.
@@ -335,6 +337,8 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
     The period 2017-12-31 - 2018-12-31 will be our out of sample data. We will store
     the three desired files in a folder named 'triplets'. The out of sample data we store in
     a folder called 'split'.
+
+    **Script 4:**
 
     .. code-block:: python
 
@@ -368,3 +372,154 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
     We will discuss the split files that were placed into the split folder later.
 |
 **Section 2: Creating the xGenESeSS models.**
+
+**2.1 xGenESeSS and settings.**
+    With the three files constituting the time series table prepared, it is time
+    to produce xGenESeSS models. Doing so will require the **xGenESeSS binary**.
+    There are many variables that can be set with in this process. We use a yaml file,
+    **config.yaml**, to have our settings in one place.
+
+    .. code-block:: yaml
+
+        #YAML Configuration
+
+        # path to file which has the rowwise multiline time series data
+        TS_PATH: './CRIME-_2015-01-01_2017-12-31.csv'
+
+        # path to file with name of the variables
+        NAME_PATH: './CRIME-_2015-01-01_2017-12-31.coords'
+
+        # path to log file for xgenesess inference
+        LOG_PATH: 'log.txt'
+
+        # xgenesses run parameters (these are not hyperparameters, Beg is 0, End is whatever tempral memory is)
+        END: 60
+        BEG: 0
+
+        # number of restarts (20 is good)
+        NUM: 2
+
+        # partition sequence (we can specify different partition for each time series. XgenESeSS already has this capability)
+        PARTITION:
+        - 0.5
+
+        # number of models to use in prediction (using cynet binary)
+        model_nums:
+        - 85
+
+        # prediction horizons to test in unit of temporal quantization (using cynet binary)
+        horizons:
+        - 7
+
+        # length of run using cynet (generally length of individual ts in split folder)
+
+        RUNLEN: 1125
+
+        #Periods to predict for
+        FLEX_TAIL_LEN: 30
+
+        # path to split series
+
+        DATA_PATH: '../split/2015-01-01_2018-12-31'
+
+        # path to models
+        FILEPATH: 'models/'
+
+        # glob string that matches all the model.json files.
+        MODEL_GLOB: 'models/*model.json'
+
+        # number of processors to use for post process models
+        NUMPROC: 10
+
+        # path to where result files are stored
+        RESPATH: './models/*model*res'
+
+        # path to XgenESeSS binary
+        XgenESeSS: '../bin/XgenESeSS'
+
+        # do we run XgenESeSS binary locally, or do we produce a list of commands to be run via phnx
+        RUN_LOCAL: 0
+
+        # max distance cutoff in render network
+        MAX_DIST: 3
+
+        # min distance cutoff in render network
+        MIN_DIST: 0.1
+
+        # max gamma cutoff in render network
+        MAX_GAMMA: 0.95
+
+        # min gamma cutoff in render network
+        MIN_GAMMA: 0.25
+
+        # colormap in render network
+        COLORMAP: 'Reds'
+
+**2.2: Generating xGenESeSS commands.**
+    The important settings for this step are:
+        * TS_PATH
+        * NAME_PATH
+        * LOG_PATH
+        * END and BEG
+        * NUM
+        * PARTITION
+        * RUN_LOCAL
+    |
+    Cynet provides a class that will generate a file which will generate the commands
+    which will need to be run.
+
+    **Script 5:**
+
+    .. code-block:: python
+
+        import cynet.cynet as cn
+
+        stream = file('config_pypi.yaml', 'r')
+        settings_dict=yaml.load(stream)
+
+        TS_PATH=settings_dict['TS_PATH']
+        NAME_PATH=settings_dict['NAME_PATH']
+        LOG_PATH=settings_dict['LOG_PATH']
+        FILEPATH=settings_dict['FILEPATH']
+        END=settings_dict['END']
+        BEG=settings_dict['BEG']
+        NUM=settings_dict['NUM']
+        PARTITION=settings_dict['PARTITION']
+        XgenESeSS=settings_dict['XgenESeSS']
+        RUN_LOCAL=settings_dict['RUN_LOCAL']
+
+        XG = cn.xgModels(TS_PATH,NAME_PATH, LOG_PATH,FILEPATH, BEG, END, NUM, PARTITION, XgenESeSS,RUN_LOCAL)
+        XG.run(workers=4)
+
+    **Script 5** calls in the required settigs and generates a **program_calls.txt**
+    containing all the XGenESeSS commands that need to be called. There will be one
+    command for every tile in our timeseries table. Alternatively, if RUN_LOCAL is set to
+    True, XG.run() will run the commands locally instead. This is generally not recommended
+    unless
+
+    One of the commands should look like this. xGenESeSS command for tile 1592.
+
+    .. code-block:: bash
+
+        ../bin/XgenESeSS -f ./CRIME-_2015-01-01_2017-12-31.csv -k "  :1592 "  -B 0
+        -E 60 -n 2 -p 0.5 -S -N ./CRIME-_2015-01-01_2017-12-31.coords -l models/1592log.txt
+        -m -g 0.01 -G 10000 -v 0 -A .5 -q -w models/1592
+
+    **Section 2.3: Running the commands.**
+
+    Whether you run the commands locally or on a computing cluster, the directory
+    needs to be set up properly. For the settings above, our directory looks like this.
+
+    .. code-block:: bash
+
+        ..
+        |-- bin/
+        |   |-- XgenESeSS
+        |-- payload2015_2017/
+             | -- CRIME-_2015-01-01_2017-12-31.columns
+             | -- CRIME-_2015-01-01_2017-12-31.coords
+             | -- CRIME-_2015-01-01_2017-12-31.csv
+             | -- models/
+
+    Running all of the xGenESeSS commands listed in program_calls.txt will output
+    *model.json files inside the models directory. One model file will appear for each tile.
