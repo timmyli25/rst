@@ -134,6 +134,87 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
 
     .. code-block:: python
 
+        import numpy as np
+        EPS = 200
+
+        grid={'Latitude':np.around(np.linspace(41.5,42.05,EPS),decimals=5),
+              'Longitude':np.around(np.linspace(-87.9,-87.2,EPS),decimals=5),
+              'Eps':EPS}
+
+        tiles=list([[grid['Latitude'][i],grid['Latitude'][i+1],grid['Longitude'][j], grid['Longitude'][j+1]]
+                    for i in np.arange(len(grid['Latitude'])-1)
+                    for j in np.arange(len(grid['Longitude'])-1)])
+
+
+    **tiles** is generated using **grid** and **EPS**. In grid, we define the
+    latitude longitude boundaries of Chicago. We divide the boundaries into
+    sections based on EPS. Then coordinates are paired up to made a list of list (**tiles**).
+    Each inner list is in the format [latitude 1, latitude 2, longitude 1, longitude 2]
+    and represents the boundaries for a tile. Note that **EPS** will dictate how finely
+    the grid is divided and thus controls the number of tiles. Please feel free to lower
+    EPS to a lower integer to decrease run time.
+
+    .. code-block:: python
+
+        import cynet.cynet as cn
+
+        STOREFILE='crime.p'
+        CSVFILE='crime.csv'
+
+        S0=cn.spatioTemporal(log_file=CSVFILE,
+                             log_store=STOREFILE,
+                             types=[['BURGLARY','THEFT','MOTOR VEHICLE THEFT']],
+                             value_limits=None,
+                             grid=tiles,
+                             init_date='2001-01-01',
+                             end_date='2018-12-31',
+                             freq='D',
+                             EVENT='Primary Type',
+                             threshold=0.05)
+        S0.fit(csvPREF='CRIME-')
+
+    **CSVFILE** refers to the crime csv data file downloaded from the Chicago database.
+    **STOREFILE** is where we will store the database as a pickle file incase it needs
+    to be recalled.
+    In the **S0** class, the following arguments are used.
+
+    **EVENT:** which indicates the column name in the dataframe with which we
+    will use to select events.
+
+    **types:** list of list which defines the groups to be selected for. We only
+    have one group here. Every event which falls into the specifed categories
+    ('BURGLARY','THEFT','MOTOR VEHICLE THEFT') will be selected. Other categories
+    are not counted.
+
+    **value_limits:** Only for numerical categories. Set to none here.
+
+    **init_date** and **end_date:** the date range of selection data.
+
+    **freq:** how large the time slices are. 'D' indicates one day.
+
+    **threshold:** A very important variable. It is not very interesting to predict
+    areas in which there are not much crime. Hence, we are using this variable
+    throw out tiles in which less than five percent of the time slices have an event.
+    That is, we keep only tiles where there was an event in at least five percent of
+    the days.
+
+    |
+
+    .. code-block:: python
+
+        tiles=S0.getGrid()
+
+        with open("tiles.txt", "wb") as tiles_pickle:
+            pickle.dump(tiles,tiles_pickle)
+
+    After throwing out the tiles which had lower than five percent event rate, we
+    retrieve those tiles that are left over with getGrid(). We store them as a pickle
+    for later use.
+
+    In sum, the script (**Script 1**) that will be run is
+
+    .. code-block:: python
+
         import cynet.cynet as cn
         import numpy as np
 
@@ -148,6 +229,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         tiles=list([[grid['Latitude'][i],grid['Latitude'][i+1],grid['Longitude'][j], grid['Longitude'][j+1]]
                     for i in np.arange(len(grid['Latitude'])-1)
                     for j in np.arange(len(grid['Longitude'])-1)])
+
 
         S0=cn.spatioTemporal(log_file=CSVFILE,
                              log_store=STOREFILE,
@@ -165,5 +247,124 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         with open("tiles.txt", "wb") as tiles_pickle:
             pickle.dump(tiles,tiles_pickle)
 
-    In the above code:
-        * **tiles** is generated using grid and EPS. 
+
+    **Script 1** creates tiles.txt, crime.p, and CRIME-BURGLARY-THEFT-MOTOR_VEHICLE_THEFT.csv.
+    This csv is the intermediate time series table mentioned above. However, it is only one of
+    them. We will create two more.
+
+    **Script 2**
+
+    .. code-block:: python
+
+        import cynet.cynet as cn
+        import pickle
+
+        STOREFILE='crime.p'
+        CSVFILE='crime.csv'
+
+        with open("tiles.txt", "rb") as tiles_pickle:
+            tiles = pickle.load(tiles_pickle)
+
+        S01=cn.spatioTemporal(log_store=CSVFILE,
+                             types=[['HOMICIDE','ASSAULT','BATTERY']],
+                             value_limits=None,
+                             grid=tiles,
+                             init_date='2001-01-01',
+                             end_date='2018-12-31',
+                             freq='D',threshold=0.05)
+        S01.fit(csvPREF='CRIME-')
+
+    This is very much like **Script 1** with the only difference being that it loads
+    in the previously stored tiles. This will produce another intermediate
+    time series table for another group of categories. The csv is called
+    CRIME-HOMICIDE-ASSAULT-BATTERY.csv We do not change the tiles
+    with get grid as that will make the tiles used for all three scripts to be different.
+
+    **Script 3:**
+
+    .. code-block:: python
+
+        import cynet.cynet as cn
+        import pickle
+
+        STOREFILE='crime.p'
+        CSVFILE='crime.csv'
+
+        with open("list1.txt", "rb") as tiles_pickle:
+            tiles = pickle.load(tiles_pickle)
+
+        S2=cn.spatioTemporal(log_store=STOREFILE,
+                            types=None,
+                            value_limits=[0,1],
+                            grid=tiles,
+                            init_date='2001-01-01',
+                            end_date='2018-12-31',
+                            freq='D', EVENT='Arrest',
+                            threshold=0.05)
+        S2.fit(csvPREF='ARREST')
+
+        This script is slightly different from the last two. By leaving types as None,
+    all of the categories in "Primary Type" will be counted. Instead, we filter by
+    the "Arrest" column. This time, we are creating a time  series table whose tiles
+    had a crime which resulted in an arrest in at least five percent of the days.
+    The CSV created here will called ARREST.csv.
+
+    The three intermediate time series tables we have now are:
+
+    * CRIME-BURGLARY-THEFT-MOTOR_VEHICLE_THEFT.csv (Nonviolent Crimes)
+    * CRIME-HOMICIDE-ASSAULT-BATTERY.csv (Violent Crimes)
+    * ARREST.csv (All Categories)
+    |
+    As explained above, the columns in these csvs will be dates. Each row will be will
+    be a tile followed by that tile's timeseries. The tiles will look like so:
+
+    * 41.65477#41.65754#-87.61508#-87.61156#CRIME-BURGLARY-THEFT-MOTOR_VEHICLE_THEFT
+    * 41.65477#41.65754#-87.61508#-87.61156#HOMICIDE-ASSAULT-BATTERY
+    * 41.65477#41.65754#-87.61508#-87.61156#VAR
+    |
+
+    In the first two we combine the names of the category and use that as the type name
+    of the tile. In the ARREST csv, we use "VAR" to indicate that any category in
+    "Primary Type" counted. Lastly, the scripts are run separately because each can have high
+    run time depending on how large **EPS** is.
+|
+
+**1.4: Generating the coordinate, column, and csv files.**
+    Now it is time to generate the file formats appropriate for xGenESeSS.
+    We will use the date range 2015-01-01 - 2017-12-31 as our training data.
+    The period 2017-12-31 - 2018-12-31 will be our out of sample data. We will store
+    the three desired files in a folder named 'triplets'. The out of sample data we store in
+    a folder called 'split'.
+
+    .. code-block:: python
+
+        import cynet.cynet as cn
+
+        CSVfile = ['ARREST.csv','CRIME-BURGLARY-THEFT-MOTOR_VEHICLE_THEFT.csv','CRIME-HOMICIDE-ASSAULT-BATTERY.csv']
+        begin = '2015-01-01'
+        end = '2017-12-31'
+        extended_end = '2018-12-31'
+        name = 'triplet/' + 'CRIME-'+'_' + begin + '_' + end
+
+        #Generates desired triplets.
+        cn.readTS(CSVfile,csvNAME=name,BEG=begin,END=end)
+
+        #Generates files which contains in sample and out of sample data.
+        cn.splitTS(CSVfile, BEG = begin, END = extended_end, dirname = './split', prefix = begin + '_' + extended_end)
+
+    We combine all the csvs produced in the last step. Recall that their columns,
+    the dates, are all the same. The number of tiles in each file may be different,
+    but they do not necessarily need to be the same. We take each of the csvs and stack
+    them on top of each other. This table is pulled apart into the three files described
+    in section 1.1. All tile names will go into a .coords file. The dates will go into
+    a .columns file. Lastly, the time series for each tile will go into a .csv file.
+
+    The three files will be:
+
+    * CRIME-_2016-01-01_2018-12-31.csv
+    * CRIME-_2016-01-01_2018-12-31.coordss
+    * CRIME-_2016-01-01_2018-12-31.columns
+
+    We will discuss the split files that were placed into the split folder later.
+|
+**Section 2: Creating the xGenESeSS models.**

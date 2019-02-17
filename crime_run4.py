@@ -21,5 +21,6 @@ for period in DATES:
     end = period[1]
     extended_end = period[2]
     name = 'triplet/' + 'CRIME-'+'_' + begin + '_' + end
+    print(name, begin, end, extended_end, begin + '_' + extended_end)
     #sp.readTS(CSVfile,csvNAME=name,BEG=begin,END=end)
-    sp.splitTS(CSVfile, BEG = begin, END = extended_end, dirname = './split', prefix = begin + '_' + extended_end)
+    #sp.splitTS(CSVfile, BEG = begin, END = extended_end, dirname = './split', prefix = begin + '_' + extended_end)
