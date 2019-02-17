@@ -1,6 +1,7 @@
 import cynet.cynet as cn
+import yaml
 
-stream = file('config_pypi.yaml', 'r')
+stream = file('config.yaml', 'r')
 settings_dict=yaml.load(stream)
 
 TS_PATH=settings_dict['TS_PATH']

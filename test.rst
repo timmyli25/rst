@@ -41,7 +41,7 @@ Cynet
 **Contents:**
     1. Processing raw data into xGenESeSS friendly format.
     2. Generating models using xGenESeSS.
-    3. Running Cynet binary to get predictions files.
+    3. Running Cynet binary to get predictions log files.
     4. Evaluating Predictions.
     5. Using predictions to generate predictive heat maps.
 
@@ -413,10 +413,10 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
 
         # length of run using cynet (generally length of individual ts in split folder)
 
-        RUNLEN: 1125
+        RUNLEN: 1460
 
         #Periods to predict for
-        FLEX_TAIL_LEN: 30
+        FLEX_TAIL_LEN: 365
 
         # path to split series
 
@@ -473,8 +473,9 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
     .. code-block:: python
 
         import cynet.cynet as cn
+        import yaml
 
-        stream = file('config_pypi.yaml', 'r')
+        stream = file('config.yaml', 'r')
         settings_dict=yaml.load(stream)
 
         TS_PATH=settings_dict['TS_PATH']
@@ -523,3 +524,131 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
 
     Running all of the xGenESeSS commands listed in program_calls.txt will output
     *model.json files inside the models directory. One model file will appear for each tile.
+    If you are running on the Uchicago computing cluster, the following settings work well.
+
+    .. code-block:: bash
+
+        USER UserID
+        MAX_PARALLEL_JOBS 100
+        INTERVAL 60
+        PARTITION broadwl
+        RUNTIME 1
+        QOS normal
+        MEM 10G
+        NODES 1
+        TPC 28
+        RUNTIME_LIMIT 35
+
+**Section 3: Running Cynet to get prediction log files.**
+
+**3.1: Split files.**
+    Once the model json files have been produced, it is time to run the cynet binary.
+    There were files produced by **Script 4** in section 1.4 that outputted to a folder
+    called split. We set their prefix to be a combination of the beginning and end dates
+    As a result, the name of each file is their date range combined with the tile name.
+    Below is an example.
+
+    .. code-block:: bash
+
+        2015-01-01_2018-12-3142.01633#42.02755#-87.67143#-87.65714#HOMICIDE-ASSAULT-BATTERY
+
+    The contents of these files are simply that tile's time series within the data range.
+    We currently have these split files set to be one year longer, in length, compared
+    to the training data. The training data was dated 01/01/2015 - 12/31/2017. Three
+    years or 1195 days (365 times 3). The split files are dated 01/01/2015 - 12/31/2018.
+    This four years or 1460 days (365 * 4). Hence, the split file contains the time series
+    of the training, in sample period, and the out of sample data (the year of 2018).
+    **RUNLEN** will be the length of the split files, 1460. **FLEX_TAIL_LEN** will be
+    the length of the out of sample data, 365. **DATA_PATH** is the path from the working
+    directory to the split folder combined with the date prefix. **See the yaml configuration
+    above.**
+
+    With the working directory being **payload2015_2017/,** the directory tree in this
+    example looks like this.
+
+    .. code-block:: bash
+
+        ..
+        |-- bin/
+        |   |-- XgenESeSS
+        |-- payload2015_2017/
+        |    | -- CRIME-_2015-01-01_2017-12-31.columns
+        |    | -- CRIME-_2015-01-01_2017-12-31.coords
+        |    | -- CRIME-_2015-01-01_2017-12-31.csv
+        |    | -- models/
+        |         | -- *model.json (multiple)
+        |--split/
+           | -- 2015-01-01_2018-12-3142.01633#42.02755#-87.67143* (multiple)
+
+**3.2: Cynet Log files.**
+
+    Cynet takes the model json files and split files to create log files. A log file
+    is produced for each tile. The names of these log files will contain its tile number,
+    the number of models used in generating its **predicted time series,** and the
+    source variable type used to make the predictions.
+
+    .. code-block:: bash
+
+        9modeluse85models#HOMICIDE-ASSAULT-BATTERY.log
+
+    This is in the format (tile number)modeluse(number of predictor tiles used)models#(source variable).log
+
+    Inside the log files is, in order, information on the target tile of the predictions, the
+    number of the time slice (day), if an event actually happened,
+    probability threshold of non-event, and probability threshold of event.
+
+    .. code-block:: bash
+
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 7 0 0.793203 0.206797
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 8 0 0.791338 0.208662
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 9 1 0.793203 0.206797
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 10 1 0.791795 0.208205
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 11 0 0.782952 0.217048
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 12 0 0.788287 0.211713
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 13 0 0.787275 0.212725
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 14 0 0.786255 0.213745
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 15 0 0.790431 0.209569
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 16 0 0.797401 0.202599
+        ...
+
+    We are using variables to predict one another. In the above, we are Using
+    the variable **HOMICIDE-ASSAULT-BATTERY**, the source, to predict **VAR**, the target.
+
+**3.3: Running cynet to generate log files.**
+
+    To create these log files from model json and split files, cynet uses the
+    run_parallel function.
+
+    **Script 6**
+
+    .. code-block:: python
+
+        import cynet.cynet as cn
+        import yaml
+        import glob
+
+        stream = file('config.yaml', 'r')
+        settings_dict = yaml.load(stream)
+
+        model_nums = settings_dict['model_nums']
+        MODEL_GLOB = settings_dict['MODEL_GLOB']
+        horizon = settings_dict['horizons'][0]
+        DATA_PATH = settings_dict['DATA_PATH']
+        RUNLEN = settings_dict['RUNLEN']
+        RESPATH = settings_dict['RESPATH']
+        FLEX_TAIL_LEN = settings_dict['FLEX_TAIL_LEN']
+        VARNAME=list(set([i.split('#')[-1] for i in glob.glob(DATA_PATH+"*")]))+['ALL']
+
+        cn.run_pipeline(MODEL_GLOB,model_nums, horizon, DATA_PATH, RUNLEN, VARNAME, RESPATH,\
+            FLEX_TAIL_LEN=FLEX_TAIL_LEN,cores=4,gamma=True)
+
+    Once again, load in necessary parameters from the yaml configuration file. The cores
+    argument defines the number of cpus that will be used to run cynet in parallel.
+    We can sort the models by gamma or distance. **NEEDS TO BE FILLED IN. WHAT IS GAMMA**.
+    Distance is the distance between the source and target tiles. **VARNAME**
+    is a list of the different variable types of the tiles and ALL. These will be
+    the sources in the predictions. ALL indicates that
+    all model types are being used in the prediction.The log files will be placed in the
+    models folder, at least in this example.
+
+    

@@ -4,7 +4,7 @@ import pickle
 STOREFILE='crime.p'
 CSVFILE='crime.csv'
 
-with open("list1.txt", "rb") as tiles_pickle:
+with open("tiles.txt", "rb") as tiles_pickle:
     tiles = pickle.load(tiles_pickle)
 
 S2=cn.spatioTemporal(log_store=STOREFILE,
