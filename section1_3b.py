@@ -1,13 +1,14 @@
 import cynet.cynet as cn
+import pandas as pd
 import pickle
-
+import numpy as np
 STOREFILE='crime.p'
 CSVFILE='crime.csv'
 
 with open("tiles.txt", "rb") as tiles_pickle:
     tiles = pickle.load(tiles_pickle)
 
-S01=cn.spatioTemporal(log_store=CSVFILE,
+S01=cn.spatioTemporal(log_store=STOREFILE,
                      types=[['HOMICIDE','ASSAULT','BATTERY']],
                      value_limits=None,
                      grid=tiles,

@@ -1,6 +1,6 @@
 import cynet.cynet as cn
 import numpy as np
-
+import pickle
 EPS = 200
 STOREFILE='crime.p'
 CSVFILE='crime.csv'
