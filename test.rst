@@ -651,4 +651,59 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
     all model types are being used in the prediction.The log files will be placed in the
     models folder, at least in this example.
 
-    
+**3.4: tpr, fpr, and auc statistics.(WIP)**
+    Aside from the cynet log files produced in the designated directory(**models/**),
+    **res** or result csvs are also placed into the directory. Recall that we are
+    using different variable types to predict each other. For example, we use:
+
+    * VAR to predict HOMICIDE-ASSAULT-BATTERY
+    * HOMICIDE-ASSAULT-BATTERY to predict BURGLARY-THEFT-MOTOR_VEHICLE_THEFT
+    * ALL to predict VAR
+
+    and so on. In these result files are auc (area under curve), tpr (true positive rate),
+    and fpr (false positive rate) statistics on the model's preformance.
+
+    .. code-block:: bash
+
+        loc_id,lattgt1,lattgt2,lontgt1,lontgt2,varsrc,vartgt,num_models,auc,tpr,fpr,horizon
+        models/9model,41.67688,41.67965,-87.64322,-87.6397,VAR,VAR,85,0.802666,0.518072,0.403226,7
+        models/9model,41.67688,41.67965,-87.64322,-87.6397,HOMICIDE-ASSAULT-BATTERY,VAR,85,0.770124,0.494382,0.453488,7
+        models/9model,41.67688,41.67965,-87.64322,-87.6397,BURGLARY-THEFT-MOTOR_VEHICLE_THEFT,VAR,85,0.767714,0.333333,0.397661,7
+        models/9model,41.67688,41.67965,-87.64322,-87.6397,ALL,VAR,85,0.80817,0.487805,0.338624,7
+
+    The **loc_id** gives the name of the model file. **varsrc** is the variable of the source of
+    the predictions. **vartgt** is the the variable type of the tile for which the prediction
+    is being made. Note that **vartgt** is all the same, VAR. This is the result file for
+    one tile, and predictions are coming in from other tiles. Hence, the third(including the header)
+    line of the above result file contains statistics on the performance of the predictions
+    made by all tiles using the variable HOMICIDE-ASSAULT-BATTERY (source). These predictions
+    are made for events at the tile given by the boundaries the longitude and latitude parameters
+    plus the VAR variable.
+
+    The result files for every tile is combined into a single csv called **all_res.csv**
+    and placed into the working directory by **run_pipeline()**.
+
+**3.5: Plotting statistics**
+
+    Plotting the statistics is done once **all_res.csv** is produced. We provide
+    a simple script.
+
+    **Script 7**
+
+    .. code-block:: python
+
+        import cynet.cynet as cn
+
+            VARNAMES=['BURGLARY-THEFT-MOTOR_VEHICLE_THEFT','HOMICIDE-ASSAULT-BATTERY','VAR']
+
+            cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2','vartgt'],varname='auc',VARNAMES=VARNAMES)
+            cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2','vartgt'],varname='tpr',VARNAMES=VARNAMES)
+            cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2','vartgt'],varname='fpr',VARNAMES=VARNAMES)
+            cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2'],varname='tpr',VARNAMES=VARNAMES)
+            cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2'],varname='auc',VARNAMES=VARNAMES)
+            cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2'],varname='fpr',VARNAMES=VARNAMES)
+
+        This produces various plots. It should be obvious what each plot is. The auc
+        is included below.
+
+    .. image:: payload2015_2017/auc.pdf
