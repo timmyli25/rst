@@ -41,8 +41,8 @@ Cynet
 **Contents:**
     1. Processing raw data into xGenESeSS friendly format.
     2. Generating models using xGenESeSS.
-    3. Running Cynet binary to get predictions log files.
-    4. Evaluating Predictions.
+    3. Running Cynet binary to get predictions log files and statistics.
+    4. Generating prediction csvs.
     5. Using predictions to generate predictive heat maps.
 
 |
@@ -539,7 +539,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         TPC 28
         RUNTIME_LIMIT 35
 
-**Section 3: Running Cynet to get prediction log files.**
+**Section 3: Running Cynet to get prediction log files and statistics.**
 
 **3.1: Split files.**
     Once the model json files have been produced, it is time to run the cynet binary.
@@ -578,7 +578,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         |    | -- models/
         |         | -- *model.json (multiple)
         |--split/
-           | -- 2015-01-01_2018-12-3142.01633#42.02755#-87.67143* (multiple)
+           | -- 2015-01-01_2018-12-31* (multiple)
 
 **3.2: Cynet Log files.**
 
@@ -703,7 +703,101 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
             cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2'],varname='auc',VARNAMES=VARNAMES)
             cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2'],varname='fpr',VARNAMES=VARNAMES)
 
-        This produces various plots. It should be obvious what each plot is. The auc
-        is included below.
+    This produces various plots. It should be obvious what each plot is. The auc
+    is included below.
+
+    GRAPH NEEDS TO BE REPLACED
 
     .. image:: payload2015_2017/auc.pdf
+
+**Section 4: Generating prediction csvs.**
+
+**4.1: The flexroc binary.**
+
+    The flexroc binary is one of the cynet package's tools for calculating auc, tpr,
+    and fpr statistics. Recall that in each of the log files, there is a series of
+    positive event probabilities. One probability is given for each day. Example
+    from section 3.2.
+
+    .. code-block:: bash
+
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 7 0 0.793203 0.206797
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 8 0 0.791338 0.208662
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 9 1 0.793203 0.206797
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 10 1 0.791795 0.208205
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 11 0 0.782952 0.217048
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 12 0 0.788287 0.211713
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 13 0 0.787275 0.212725
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 14 0 0.786255 0.213745
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 15 0 0.790431 0.209569
+        ----> 41.67688#41.67965#-87.66432#-87.6608#VAR 16 0 0.797401 0.202599
+        ...
+
+    The positive event probabilities are in the last column. Suppose we were to choose
+    a threshold for these probabilities. On days where the probability is higher
+    than this threshold, then, we would say there is a predicted event.
+    On days where the probability is lower than this threshold, then a non event is
+    predicted for that day. One can imagine that if the threshold is fixed very low,
+    then more events will be predicted. In this case, we will capture more of the
+    actual events, but will have more false positives. On the other hand, if the threshold
+    is set very high, then fewer events will be predicted and we will have more
+    false negatives.
+    |
+
+    The **flexroc** binary allows us to specify a desired true positive rate,tpr, or
+    false positive rate,fpr. It takes the log file and returns the threshold that should
+    be used to achieve either the desired tpr or fpr. We can then use that threshold
+    to map the positive event probabilities into a series of actual events.
+
+**4.2: Prediction csvs.**
+
+    Aside from mapping the series of probabilities into predictions, we would also like
+    to transform the cynet log files into a more manageable forms. We'd like to generate
+    csvs which contain the information in the log files as well as the mapped event
+    series.
+
+    .. code-block:: bash
+
+        lat1,lat2,lon1,lon2,target,day,actual_event,negative_event,positive_event,predictions,source,threshold
+        41.67688,41.67965,-87.64322,-87.6397,VAR,7,0,0.780455,0.219545,1,BURGLARY-THEFT-MOTOR_VEHICLE_THEFT,0.1207
+        41.67688,41.67965,-87.64322,-87.6397,VAR,8,0,0.776299,0.223701,1,BURGLARY-THEFT-MOTOR_VEHICLE_THEFT,0.1207
+        41.67688,41.67965,-87.64322,-87.6397,VAR,9,0,0.80419,0.19581,1,BURGLARY-THEFT-MOTOR_VEHICLE_THEFT,0.1207
+        41.67688,41.67965,-87.64322,-87.6397,VAR,10,0,0.783441,0.216559,1,BURGLARY-THEFT-MOTOR_VEHICLE_THEFT,0.1207
+        41.67688,41.67965,-87.64322,-87.6397,VAR,11,1,0.734133,0.265867,1,BURGLARY-THEFT-MOTOR_VEHICLE_THEFT,0.1207
+        41.67688,41.67965,-87.64322,-87.6397,VAR,12,0,0.830888,0.169112,1,BURGLARY-THEFT-MOTOR_VEHICLE_THEFT,0.1207
+        41.67688,41.67965,-87.64322,-87.6397,VAR,13,1,0.810834,0.189166,1,BURGLARY-THEFT-MOTOR_VEHICLE_THEFT,0.1207
+        41.67688,41.67965,-87.64322,-87.6397,VAR,14,0,0.803271,0.196729,1,BURGLARY-THEFT-MOTOR_VEHICLE_THEFT,0.1207
+        41.67688,41.67965,-87.64322,-87.6397,VAR,15,0,0.777034,0.222966,1,BURGLARY-THEFT-MOTOR_VEHICLE_THEFT,0.1207
+        41.67688,41.67965,-87.64322,-87.6397,VAR,16,0,0.789064,0.210936,1,BURGLARY-THEFT-MOTOR_VEHICLE_THEFT,0.1207
+        ...
+
+    Note that the threshold used for the mapping is also given.
+
+**4.3: Running flexroc.**
+
+    Cynet provides a wrapper function for the flexroc binary, **flexroc_only_parallel**.
+    It takes a specified tpr or fpr. It applies flexroc to desired log files, and
+    for each log file returns the threshold necessary to achieve the desired rate.
+    This implies that the threshold will likely be different between log files.
+
+    **Script 8**
+
+    .. code-block:: python
+
+        import cynet.cynet as cn
+        import yaml
+
+        stream = file('config_pypi.yaml', 'r')
+        settings_dict = yaml.load(stream)
+        FLEX_TAIL_LEN = settings_dict['FLEX_TAIL_LEN']
+
+        cn.flexroc_only_parallel('models/*.log',tpr_threshold=0.85,fpr_threshold=None,FLEX_TAIL_LEN=FLEX_TAIL_LEN, cores=4)
+
+    As, described, **flexroc_only_parallel** will apply flexroc to all the log files
+    matched by the glob string **models/*.log**. The desired tpr is set to 0.85, whereas
+    the desired fpr is set to none. Again, only one can be chosen. **FLEX_TAIL_LEN**
+    is retrieved from the yaml configuration and is 365 in this example. The required threshold
+    for each log file is acquired and then applied to their probability series. The resulting
+    event series and all the information in the log file is transferred in a csv file.
+    A csv is created for each log file and will also be placed in the same directory
+    as the log files.
