@@ -45,7 +45,7 @@ VARNAMES=['Label1','Label2','Label3']
 #cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2','vartgt'],varname='tpr',VARNAMES=VARNAMES)
 #cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2','vartgt'],varname='fpr',VARNAMES=VARNAMES)
 #cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2'],varname='tpr',VARNAMES=VARNAMES)
-cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2'],varname='auc',VARNAMES=VARNAMES)
+#cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2'],varname='auc',VARNAMES=VARNAMES)
 #cn.get_var('res_all.csv',['lattgt1','lattgt2','lontgt1','lontgt2'],varname='fpr',VARNAMES=VARNAMES)
 
 model_path=settings_dict['FILEPATH']+'*model.json'
@@ -64,5 +64,5 @@ mapper.concat_dataframes('85modelsNonVPeturbedHOMICIDE-ASSAULT-BATTERY.csv')
 mapper=cn.mapped_events('models/*85models#VAR#*.csv')
 mapper.concat_dataframes('85modelsNonVPeturbedVAR.csv')
 '''
-#mapper=cn.mapped_events('models/*85models#BURGLARY-THEFT-MOTOR_VEHICLE_THEFT#*.csv')
-#mapper.concat_dataframes('85modelsNonVPeturbedBURGLARY-THEFT-MOTOR_VEHICLE_THEFT.csv')
+mapper=cn.mapped_events('models/*85models#ALL#*.csv')
+mapper.concat_dataframes('85modelsALL.csv')
