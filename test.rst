@@ -52,6 +52,7 @@ Cynet
     3. Running Cynet binary to get predictions log files and statistics.
     4. Generating prediction csvs.
     5. Using predictions to generate predictive heat maps.
+    6. Perturb data for exploration.
 
 |
 
@@ -979,3 +980,207 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
     **getFigure** function in the **viscynet** file to do the same to your own heatmap.
     It should be pretty easy for the reader to run the above script 10 in a loop
     to produce a series of heatmaps and string them into a heatmap movie.
+
+**Section 6: Perturb data for exploration.**
+
+    Recall that we are using one type of event to predict for others.
+    Ex: **HOMICIDE-ASSAULT-BATTERY** predicts **BURGLARY-THEFT-MOTOR_VEHICLE_THEFT** or
+    vice-versa. It may also be the case that we are using one type of event to predict
+    for that same type. Ex: **VAR** predicts **VAR**.
+
+    What would happen if crimes in one of these categories were to increase or decrease?
+    How would that affect the dynamics of crime in Chicago? Since we have already trained
+    the models, we can answer this and similar questions simply by altering the data
+    and feeding them into the models again.
+
+**6.1: Setting up new split files.**
+
+    The trained models are not going to change. However, the split files, which
+    represents the data fed into the models, are going to change. In this example,
+    we will increase (or perturb) the occurrences of **BURGLARY-THEFT-MOTOR_VEHICLE_THEFT**
+    crime events by ten percent and observe the change in predictions made by the models.
+
+    Recall our directory setup.
+
+    .. code-block:: bash
+
+        ..
+        |-- bin/
+        |    |-- XgenESeSS
+        |-- payload2015_2017/
+        |    |-- other files
+        |    |-- models/
+        |         |-- *model.json (multiple) + other files
+        |--split/
+             |-- 2015-01-01_2018-12-31* (multiple)
+
+    Create a new directory called **split_burg_10p/** adjacent to the old split
+    directory. This is where we will place the perturbed data. Also create a new
+    payload directory named **perturbed_payload2015_2017** adjacent to the old
+    payload folder. Also create a models directory within, similar to the old payload
+    directory. Remember to move the model files, (*model.json files) to the new models
+    folder. **DO NOT** move other files from the old models directory. Only move
+    the original models generated from xGenESeSS which end in **model.json**.
+
+    .. code-block:: bash
+
+        ..
+        |-- bin/
+        |    |-- XgenESeSS
+        |-- payload2015_2017/
+        |    |-- other files
+        |    |-- models/
+        |         |-- other files that not matching *model.json
+        |-- perturbed_payload2015_2017/
+        |    |-- other files
+        |    |-- models/
+        |         |-- *model.json (multiple)
+        |
+        |--split/
+        |    |-- 2015-01-01_2018-12-31* (multiple)
+        |--split_burg_10p/
+
+    Now we change the data (split files). Recall that the names of the split files
+    indicate the date range, the tile, and the type.
+
+    Ex: 2015-01-01_2018-12-3142.01633#42.02755#-87.7#-87.68571#BURGLARY-THEFT-MOTOR_VEHICLE_THEFT
+
+    The date range is 2015/01/01 to 2018/12/31. The boundaries of the tile are given by
+    42.01633, 42.02755, -87.7, -87.68571 (lat1,lat2,lon1,lon2). The type is
+    **BURGLARY-THEFT-MOTOR_VEHICLE_THEFT**. We are only concerned with
+    split files matching the 2015/01/01 to 2018/12/31 date range. Furthermore,
+    we are only looking to increase nonviolent crimes, **BURGLARY-THEFT-MOTOR_VEHICLE_THEFT**.
+    Thus we will keep file types **VAR** and **HOMICIDE-ASSAULT-BATTERY** the same.
+
+    With that said, copy the files corresponding to the types that we will not change
+    into the new split folder. Like so:
+
+    .. code-block:: bash
+
+        cp split/2015-01-01_2018-12-31*VAR split_burg_10p/
+        cp split/2015-01-01_2018-12-31*HOMICIDE-ASSAULT-BATTERY split_burg_10p/
+
+    Now we have the data which are not being changed in the proper place. For the
+    data we will change, use the following script.
+
+    **Script 11**
+
+    .. code-block:: python
+
+        import cynet.cynet as cn
+
+        cn.alter_splitfiles('split/2015*BURGLARY-THEFT-MOTOR_VEHICLE_THEFT','split_burg_10p/', theta=0.1)
+
+    The **alter_splitfiles** function looks for files matching the first argument,
+    the changes perturbs them. Each file is a series of numbers indicating
+    the number of crime incidents that occurred on a certain day. Whenever it encounters
+    a 0, a day where there was no crime, it will change it to a 1 with a probability of
+    theta. Since the split files consists of mostly 0's, it is similar to increasing
+    crime by 10 percent. The new split files are placed into the directory designated
+    by the second argument.
+
+    .. code-block:: bash
+
+        ..
+        |-- bin/
+        |    |-- XgenESeSS
+        |-- payload2015_2017/
+        |    |-- other files
+        |    |-- models/
+        |         |-- other files that not matching *model.json
+        |-- perturbed_payload2015_2017/
+        |    |-- other files
+        |    |-- models/
+        |         |-- *model.json (multiple)
+        |
+        |--split/
+        |    |-- 2015-01-01_2018-12-31* (multiple)
+        |--split_burg_10p/
+        |    |-- 2015-01-01_2018-12-31* (multiple. perturbed and non-perturbed)
+
+**6.2: Rerunning cynet for new prediction csvs.**
+
+    Everything is in place to rerun cynet for the new csvs. We now work in the
+    **perturbed_payload2015_2017/** directory. The last thing we need to change is
+    one setting in our configuration yaml file.
+
+    .. code-block:: yaml
+
+        #YAML Configuration
+
+        # path to file which has the rowwise multiline time series data
+        TS_PATH: './CRIME-_2015-01-01_2017-12-31.csv'
+
+        # path to file with name of the variables
+        NAME_PATH: './CRIME-_2015-01-01_2017-12-31.coords'
+
+        # path to log file for xgenesess inference
+        LOG_PATH: 'log.txt'
+
+        # xgenesses run parameters (these are not hyperparameters, Beg is 0, End is whatever tempral memory is)
+        END: 60
+        BEG: 0
+
+        # number of restarts (20 is good)
+        NUM: 2
+
+        # partition sequence (we can specify different partition for each time series. XgenESeSS already has this capability)
+        PARTITION:
+        - 0.5
+
+        # number of models to use in prediction (using cynet binary)
+        model_nums:
+        - 85
+
+        # prediction horizons to test in unit of temporal quantization (using cynet binary)
+        horizons:
+        - 7
+
+        # length of run using cynet (generally length of individual ts in split folder)
+
+        RUNLEN: 1460
+
+        #Periods to predict for
+        FLEX_TAIL_LEN: 365
+
+        # path to split series
+
+        DATA_PATH: '../split_burg_10p/2015-01-01_2018-12-31'
+
+        # path to models
+        FILEPATH: 'models/'
+
+        # glob string that matches all the model.json files.
+        MODEL_GLOB: 'models/*model.json'
+
+        # number of processors to use for post process models
+        NUMPROC: 10
+
+        # path to where result files are stored
+        RESPATH: './models/*model*res'
+
+        # path to XgenESeSS binary
+        XgenESeSS: '../bin/XgenESeSS'
+
+        # do we run XgenESeSS binary locally, or do we produce a list of commands to be run via phnx
+        RUN_LOCAL: 0
+
+        # max distance cutoff in render network
+        MAX_DIST: 3
+
+        # min distance cutoff in render network
+        MIN_DIST: 0.1
+
+        # max gamma cutoff in render network
+        MAX_GAMMA: 0.95
+
+        # min gamma cutoff in render network
+        MIN_GAMMA: 0.25
+
+        # colormap in render network
+        COLORMAP: 'Reds'
+
+    Notice that only the **DATA_PATH** setting is changed. It now points to the new
+    split folder. Rerunning cynet to get the new csvs should be familiar. It only involves
+    running scripts 6 and 8 again. This needs to be done in the **perturbed_payload2015_2017/**
+    directory.
