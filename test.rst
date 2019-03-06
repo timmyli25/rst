@@ -23,11 +23,19 @@ Cynet
     inference algorithm. This package seeks to assist in the parsing of raw data
     into appropriate formats and then building predictive models from them. This
     document will go through an example of how to use this package with the
-    Chicago crime dataset to build and evaluate predictive models.
+    Chicago crime dataset to build and evaluate predictive models. We use these
+    predictions to draw an example of predictive heatmaps.
+
+.. image:: detailed_Homicide01415.png
+    :align: center
 |
 
 **Dataset:**
     <https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-present/ijzp-q8t2>
+|
+
+**Chicago Boundaries shape files:**
+    <https://data.cityofchicago.org/Facilities-Geographic-Boundaries/Boundaries-Community-Areas-current-/cauq-8yn6>
 
 |
 
@@ -801,3 +809,173 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
     event series and all the information in the log file is transferred in a csv file.
     A csv is created for each log file and will also be placed in the same directory
     as the log files.
+|
+
+**Section 5: Using predictions to generate predictive heat maps.**
+
+**5.1: Combining the csvs.**
+    We now have a csv for every tile. In this example, the csvs should have been placed
+    in the models/ directory. The names of these files contain quite a bit of information.
+
+    .. code-block:: bash
+
+        4572modeluse85models#ALL#BURGLARY-THEFT-MOTOR_VEHICLE_THEFT.csv
+
+    The above format implies that the tile number is 4572, the number of models
+    used in prediction is 85, the source used to generate the predictions is **ALL**
+    and the target predicted event is **BURGLARY-THEFT-MOTOR_VEHICLE_THEFT**. The contents
+    of these csvs have already been described in section 4.2.
+    |
+
+    Imagine if we were do combine all csvs with **ALL** as the source. We would
+    then have a single csv which contains all predictions on all tiles whose source
+    was **ALL**. We could then use pandas to select for the target. In this example,
+    we will generate a predictive heat map which uses **ALL** as the source and
+    **BURGLARY-THEFT-MOTOR_VEHICLE_THEFT**. One can of course use other variables as the
+    source or target.
+
+    **Script 9**
+
+    .. code-block:: python
+
+        import cynet.cynet as cn
+
+        mapper=cn.mapped_events('models/*85models#ALL#*.csv')
+        mapper.concat_dataframes('85modelsALL.csv')
+
+    The above script simply, combines all csvs matching the path **models/*85models#ALL#*.csv**
+    and outputs them as the concentenated csv **85modelsALL.csv**.
+
+**5.2: The heatmap settings.**
+    We will use another yaml file to set our configurations.
+
+    .. code-block:: yaml
+
+        #Heatmap configurations
+
+        #The variable which we use as the predictor of our events.
+        source: 'ALL'
+
+        #The types of events to be predicted. Only one used here, but can be more.
+        types:
+          - 'BURGLARY-THEFT-MOTOR_VEHICLE_THEFT'
+
+        #The grace we allow ourselves. One day in this case.
+        grace: 1
+
+        #A setting used in the previous scripts. Used for generating our initial grid.
+        EPS: 200
+
+        #Boundaries of Chicago
+        lat_min: 41.575
+        lat_max: 42.05
+        lon_min: -87.87
+        lon_max: -87.5
+
+        #The day number we are trying to predict on.
+        day: 1415
+
+        #Database
+        predictions_csv: '85modelsALL.csv'
+
+        #Shapefiles used. For drawing Chicago boundaries.
+        shapefiles: 'shapefiles/geo_export_437d164b-0f27-49ac-9a3c-587a85d9f3b1'
+
+        #Defines numer of tiles in our heatmap. Lower means more tiles. Will need to play around with this.
+        radius: 0.006
+
+        # How detailed out heatmap is. Lower means more detailed.
+        detail: 0.0007
+
+        #Intensity threshold
+        min_intensity: 0.006
+
+    Most of the above settings should be self-explanatory. **grace** is to give us
+    some room in our predictions. That is, if we are able to predict an event
+    within an error of 1 day, then we count that as a correct prediction. The **day** on
+    which we are predicting events for is numbered 1415. The count starts from our beginning
+    of our training period, 01-01-2015. The training period lasted until 12-31-2017,
+    or 1095 days (3 years x 365 days). Therefore, day 1415 is 320 days beyond the training
+    period. It is approximately, 11-16-2018. **shapefiles** is the path to files used
+    to draw the boundaries of Chicago. The link is listed at the start of this document.
+
+    |
+
+    We are drawing a diffusion heatmap. Hence, variables such as **radius** and **detail**
+    are necessary to define the grid in which we place the events in. Once we have placed
+    our predictions on the grid, we calculate the intensity of events in an area. We
+    will use the **min_intensity** to determine if we are predicting events in that area.
+    If the calculated intensity of the area is higher than **min_intensity**, then we are
+    predicting events.
+
+**5.3: Drawing the heatmap.**
+
+    Now we draw the heatmap.
+
+    **Script 10**
+
+    .. code-block:: python
+
+        import viscynet.viscynet as viz
+        import numpy as np
+        import pandas as pd
+        import yaml
+
+        stream = file('heatmap_config.yaml', 'r')
+        settings_dict = yaml.load(stream)
+
+        source = settings_dict['source']
+        types = settings_dict['types']
+        grace = settings_dict['grace']
+        EPS = settings_dict['EPS']
+        lat_min = settings_dict['lat_min']
+        lat_max = settings_dict['lat_max']
+        lon_min = settings_dict['lon_min']
+        lon_max = settings_dict['lon_max']
+        day = settings_dict['day']
+        csv = settings_dict['predictions_csv']
+        shapefiles = settings_dict['shapefiles']
+        radius = settings_dict['radius']
+        detail = settings_dict['detail']
+        min_intensity = settings_dict['min_intensity']
+
+        df = pd.read_csv(csv)
+        dt,fp,fn,tp,df_gnd_augmented,lon_mesh,lat_mesh,intensity = \
+        viz.get_prediction(df,day,lat_min,
+		lat_max,lon_min,lon_max,source,
+		types,startdate="12/31/2017",offset=1095,
+		radius=radius,detail=detail,
+		Z=min_intensity,SINGLE=False)
+
+        viz.getFigure(day,dt,fp,fn,tp,df_gnd_augmented,lon_mesh,lat_mesh,
+                  intensity,
+                  fname=shapefiles,cmap='terrain',
+                  save=True,PREFIX='Burglary')
+
+    Most of the above script is loading in settings. **get_prediction** takes the
+    predictions csvs and makes the calculations necessary to produce information
+    necessary for the heatmap.
+
+    * dt: the date string.
+    * fp: false positives.
+    * fn: false negatives.
+    * tp: true positives.
+    * df_gnd_augmented. A dataframe consisting of the events that actually happened today.
+    * lon_mesh and lat_mesh: boundaries of diffusion grid.
+    * intensity: series of intensities calculated for each section of our heatmap.
+    |
+
+    **getFigure** consumes this information and produces the heatmap.
+
+.. image:: Homicide01415.png
+    :align: center
+    :scale: 75%
+
+
+**Comments:**
+    Red dots indicate the events the actually happened. This heatmap looks different
+    from the one at the beginning of the document. This is because we altered the
+    getFigure function to add more information. Feel free to look change the
+    **getFigure** function in the **viscynet** file to do the same to your own heatmap.
+    It should be pretty easy for the reader to run the above script 10 in a loop
+    to produce a series of heatmaps and string them into a heatmap movie.
