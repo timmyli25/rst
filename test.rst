@@ -968,7 +968,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
 
     **getFigure** consumes this information and produces the heatmap.
 
-.. image:: Homicide01415.png
+.. image:: Burglary1415.png
     :align: center
     :scale: 75%
 
@@ -1098,11 +1098,18 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         |--split_burg_10p/
         |    |-- 2015-01-01_2018-12-31* (multiple. perturbed and non-perturbed)
 
+|
+
 **6.2: Rerunning cynet for new prediction csvs.**
+    |
 
     Everything is in place to rerun cynet for the new csvs. We now work in the
     **perturbed_payload2015_2017/** directory. The last thing we need to change is
-    one setting in our configuration yaml file.
+    one setting in our configuration yaml file. Here is the previous configuration
+    yaml but with one setting changed.
+
+    |
+    |
 
     .. code-block:: yaml
 
@@ -1183,4 +1190,29 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
     Notice that only the **DATA_PATH** setting is changed. It now points to the new
     split folder. Rerunning cynet to get the new csvs should be familiar. It only involves
     running scripts 6 and 8 again. This needs to be done in the **perturbed_payload2015_2017/**
-    directory.
+    directory. In the end, the csvs will appear in the **models/** directory as before.
+
+
+**6.3: Using the new predictions.**
+    We leave it to the reader to play around with different perturbations. We only
+    demonstrated how to perturb one variable with a theta of 0.1. It should be clear
+    how to do so with other variables and different thetas. The following is a
+    predictions heatmap produced in the exact same manner. This uses the new prediction
+    csvs from the perturbed data. Recall that this is using **ALL** to predict
+    the type we perturbed, **BURGLARY-THEFT-MOTOR_VEHICLE_THEFT**. Below is the
+    original heatmap and the one made from perturbed data.
+
+**Original**
+
+.. image:: Burglary1415.png
+    :width: 50 %
+
+**Peruturbed**
+
+.. image:: perturbedBurglary01415.png
+    :width: 50 %
+
+**Comments:**
+    One should be able to see that the insensity of crime predictions in certain
+    have increased significantly. There are many interesting results that can
+    be found between the interaction of crime types in Chicago.
