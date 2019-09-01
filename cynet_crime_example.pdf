@@ -575,7 +575,7 @@ endobj
 endobj
 67 0 obj
 <<
-/Author () /CreationDate (D:20190831213945+06'00') /Creator (\(unspecified\)) /Keywords () /ModDate (D:20190831213945+06'00') /Producer (ReportLab PDF Library - www.reportlab.com) 
+/Author () /CreationDate (D:20190831215025+06'00') /Creator (\(unspecified\)) /Keywords () /ModDate (D:20190831215025+06'00') /Producer (ReportLab PDF Library - www.reportlab.com) 
   /Subject (\(unspecified\)) /Title (Cynet) /Trapped /False
 >>
 endobj
@@ -7493,7 +7493,7 @@ endstream
 endobj
 86 0 obj
 <<
-/Length 8303
+/Length 8304
 >>
 stream
 1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
@@ -7729,7 +7729,7 @@ Q
 q
 1 0 0 1 20 0 cm
 q
-BT 1 0 0 1 0 26 Tm .097059 Tw 12 TL /F1 10 Tf 0 0 0 rg (The ) Tj /F2 10 Tf (alter_splitfiles) Tj /F1 10 Tf ( function looks for files matching the first argument, the changes perturbs them. Each file is a) Tj T* 0 Tw 2.883125 Tw (series of numbers indicating the number of crime incidents that occurred on a certain day. Whenever it) Tj T* 0 Tw 8.768333 Tw (encounters a 0, a day where there was no crime, it will change it to a 1 with a) Tj T* 0 Tw ET
+BT 1 0 0 1 0 26 Tm .424706 Tw 12 TL /F1 10 Tf 0 0 0 rg (The ) Tj /F2 10 Tf (alter_splitfiles) Tj /F1 10 Tf ( function looks for files matching the first argument, then perturbs them. Each file is a series) Tj T* 0 Tw .215 Tw (of numbers indicating the number of crime incidents that occurred on a certain day. Whenever it encounters a 0,) Tj T* 0 Tw 11.32437 Tw (a day where there was no crime, it will change it to a 1 with a probability) Tj T* 0 Tw ET
 Q
 Q
 q
@@ -7740,7 +7740,7 @@ endstream
 endobj
 87 0 obj
 <<
-/Length 8445
+/Length 8427
 >>
 stream
 1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
@@ -7752,7 +7752,7 @@ BT 1 0 0 1 0 2 Tm  T* ET
 q
 1 0 0 1 20 213.2 cm
 q
-BT 1 0 0 1 0 14 Tm 1.431667 Tw 12 TL /F1 10 Tf 0 0 0 rg (probability of theta. Since the split files consists of mostly 0's, it is similar to increasing crime by 10) Tj T* 0 Tw (percent. The new split files are placed into the directory designated by the second argument.) Tj T* ET
+BT 1 0 0 1 0 14 Tm .8 Tw 12 TL /F1 10 Tf 0 0 0 rg (of theta. Since the split files consists of mostly 0's, it is similar to increasing crime by 10 percent. The) Tj T* 0 Tw (new split files are placed into the directory designated by the second argument.) Tj T* ET
 Q
 Q
 q
@@ -8451,35 +8451,35 @@ xref
 0001661174 00000 n 
 0001676043 00000 n 
 0001680510 00000 n 
-0001688865 00000 n 
-0001697362 00000 n 
-0001705535 00000 n 
-0001706486 00000 n 
-0001706742 00000 n 
-0001706776 00000 n 
-0001706810 00000 n 
-0001706844 00000 n 
-0001706878 00000 n 
-0001706912 00000 n 
-0001706946 00000 n 
-0001706980 00000 n 
-0001707014 00000 n 
-0001707048 00000 n 
-0001707084 00000 n 
-0001707120 00000 n 
-0001707156 00000 n 
-0001707192 00000 n 
-0001707228 00000 n 
-0001707264 00000 n 
-0001707300 00000 n 
-0001707336 00000 n 
-0001707372 00000 n 
-0001707408 00000 n 
-0001707444 00000 n 
+0001688866 00000 n 
+0001697345 00000 n 
+0001705518 00000 n 
+0001706469 00000 n 
+0001706725 00000 n 
+0001706759 00000 n 
+0001706793 00000 n 
+0001706827 00000 n 
+0001706861 00000 n 
+0001706895 00000 n 
+0001706929 00000 n 
+0001706963 00000 n 
+0001706997 00000 n 
+0001707031 00000 n 
+0001707067 00000 n 
+0001707103 00000 n 
+0001707139 00000 n 
+0001707175 00000 n 
+0001707211 00000 n 
+0001707247 00000 n 
+0001707283 00000 n 
+0001707319 00000 n 
+0001707355 00000 n 
+0001707391 00000 n 
+0001707427 00000 n 
 trailer
 <<
 /ID 
-[<9608115981b331ccc1191cd5d0750e4a><9608115981b331ccc1191cd5d0750e4a>]
+[<11c71d8393405cbabec6b096f1113af8><11c71d8393405cbabec6b096f1113af8>]
 % ReportLab generated PDF document -- digest (http://www.reportlab.com)
 
 /Info 67 0 R
@@ -8487,5 +8487,5 @@ trailer
 /Size 112
 >>
 startxref
-1707480
+1707463
 %%EOF

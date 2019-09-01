@@ -1090,7 +1090,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         cn.alter_splitfiles('split/2015*BURGLARY-THEFT-MOTOR_VEHICLE_THEFT','split_burg_10p/', theta=0.1)
 
     The **alter_splitfiles** function looks for files matching the first argument,
-    the changes perturbs them. Each file is a series of numbers indicating
+    then perturbs them. Each file is a series of numbers indicating
     the number of crime incidents that occurred on a certain day. Whenever it encounters
     a 0, a day where there was no crime, it will change it to a 1 with a probability of
     theta. Since the split files consists of mostly 0's, it is similar to increasing
