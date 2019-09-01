@@ -484,8 +484,8 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         import cynet.cynet as cn
         import yaml
 
-        stream = file('config.yaml', 'r')
-        settings_dict=yaml.load(stream)
+        with open('config.yaml','r') as fh:
+            settings_dict = yaml.load(fh)
 
         TS_PATH=settings_dict['TS_PATH']
         NAME_PATH=settings_dict['NAME_PATH']
@@ -501,11 +501,29 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         XG = cn.xgModels(TS_PATH,NAME_PATH, LOG_PATH,FILEPATH, BEG, END, NUM, PARTITION, XgenESeSS,RUN_LOCAL)
         XG.run(workers=4)
 
-    **Script 5** calls in the required settigs and generates a **program_calls.txt**
+    Before running **Script 5**, create a directory named **payload2015_2017** and place
+    the command, the three files in the triplets folder and script 5 in it. Your
+    directories should look like so.
+
+    .. code-block:: bash
+
+        ..
+        |-- bin/
+        |   |-- XgenESeSS
+        |-- split/
+        |   |-- many split files
+        |-- payload2015_2017/
+             | -- CRIME-_2015-01-01_2017-12-31.columns
+             | -- CRIME-_2015-01-01_2017-12-31.coords
+             | -- CRIME-_2015-01-01_2017-12-31.csv
+             | -- script5.py
+             | -- config.yaml
+
+    **Script 5** calls in the required settings and generates a **program_calls.txt**
     containing all the XGenESeSS commands that need to be called. There will be one
     command for every tile in our timeseries table. Alternatively, if RUN_LOCAL is set to
     True, XG.run() will run the commands locally instead. This is generally not recommended
-    unless
+    unless EPS was set to something very small.
 
     One of the commands should look like this. xGenESeSS command for tile 1592.
 
@@ -530,6 +548,8 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
              | -- CRIME-_2015-01-01_2017-12-31.coords
              | -- CRIME-_2015-01-01_2017-12-31.csv
              | -- models/
+             | -- script5.py
+             | -- config.yaml
 
     Running all of the xGenESeSS commands listed in program_calls.txt will output
     *model.json files inside the models directory. One model file will appear for each tile.
@@ -636,8 +656,8 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         import yaml
         import glob
 
-        stream = file('config.yaml', 'r')
-        settings_dict = yaml.load(stream)
+        with open('config.yaml','r') as fh:
+            settings_dict = yaml.load(fh)
 
         model_nums = settings_dict['model_nums']
         MODEL_GLOB = settings_dict['MODEL_GLOB']
@@ -653,14 +673,14 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
 
     Once again, load in necessary parameters from the yaml configuration file. The cores
     argument defines the number of cpus that will be used to run cynet in parallel.
-    We can sort the models by gamma or distance. **NEEDS TO BE FILLED IN. WHAT IS GAMMA**.
+    We can sort the models by gamma or distance.
     Distance is the distance between the source and target tiles. **VARNAME**
     is a list of the different variable types of the tiles and ALL. These will be
     the sources in the predictions. ALL indicates that
     all model types are being used in the prediction.The log files will be placed in the
     models folder, at least in this example.
 
-**3.4: tpr, fpr, and auc statistics.(WIP)**
+**3.4: tpr, fpr, and auc statistics.**
     Aside from the cynet log files produced in the designated directory(**models/**),
     **res** or result csvs are also placed into the directory. Recall that we are
     using different variable types to predict each other. For example, we use:
@@ -714,8 +734,6 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
 
     This produces various plots. It should be obvious what each plot is. The auc
     is included below.
-
-    GRAPH NEEDS TO BE REPLACED
 
     .. image:: payload2015_2017/auc.pdf
 
@@ -796,8 +814,8 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         import cynet.cynet as cn
         import yaml
 
-        stream = file('config_pypi.yaml', 'r')
-        settings_dict = yaml.load(stream)
+        with open('config.yaml','r') as fh:
+            settings_dict = yaml.load(fh)
         FLEX_TAIL_LEN = settings_dict['FLEX_TAIL_LEN']
 
         cn.flexroc_only_parallel('models/*.log',tpr_threshold=0.85,fpr_threshold=None,FLEX_TAIL_LEN=FLEX_TAIL_LEN, cores=4)
@@ -848,7 +866,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
     and outputs them as the concentenated csv **85modelsALL.csv**.
 
 **5.2: The heatmap settings.**
-    We will use another yaml file to set our configurations.
+    We will use another yaml file to set our configurations. Call it **config2.yaml**.
 
     .. code-block:: yaml
 
@@ -885,7 +903,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         #Defines numer of tiles in our heatmap. Lower means more tiles. Will need to play around with this.
         radius: 0.006
 
-        # How detailed out heatmap is. Lower means more detailed.
+        # How detailed our heatmap is. Lower means more detailed.
         detail: 0.0007
 
         #Intensity threshold
@@ -922,8 +940,8 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
         import pandas as pd
         import yaml
 
-        stream = file('heatmap_config.yaml', 'r')
-        settings_dict = yaml.load(stream)
+        with open('config2.yaml','r') as fh:
+            settings_dict = yaml.load(fh)
 
         source = settings_dict['source']
         types = settings_dict['types']
@@ -1078,6 +1096,7 @@ tile **42.0196#42.02236#-87.66784#-87.66432#VAR**, 0 events took place on 1/1/20
     theta. Since the split files consists of mostly 0's, it is similar to increasing
     crime by 10 percent. The new split files are placed into the directory designated
     by the second argument.
+
 
     .. code-block:: bash
 
